@@ -95,6 +95,12 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          # PHẢI ghim wrangler 4. Mặc định của action là 3.90.0, mà bản đó chưa
+          # đọc được file cấu hình dạng JSON (wrangler.jsonc chỉ được hỗ trợ từ
+          # 3.91) — nó lặng lẽ bỏ qua wrangler.jsonc rồi báo "Missing entry-point"
+          # dù file có khai "main". Phần assets (binding, html_handling) cũng cần
+          # wrangler 4.
+          wranglerVersion: '4.123.0'
 
       - name: Nhắc nếu chưa cấu hình Cloudflare
         if: env.CF_TOKEN == ''
