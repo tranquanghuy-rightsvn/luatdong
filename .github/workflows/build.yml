@@ -8,7 +8,7 @@ name: Build site tĩnh
 # commit CHỐT của mọi thao tác nên đây là mốc duy nhất đúng.
 on:
   push:
-    branches: [main]
+    branches: [main, master]     # repo này đang dùng master
     paths:
       - 'data/posts.json'
       - 'data/redirects.json'
