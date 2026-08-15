@@ -1,0 +1,12 @@
+# Code Apps Script deploy bằng clasp, KHÔNG qua git.
+#
+# Hệ quả cần nhớ: `git status`/`git diff` sẽ không bao giờ cho bạn biết file nào
+# trong gas/ vừa đổi. Sau mỗi lần sửa gas/, phải tự ghi rõ đã đổi những file nào
+# rồi mới `clasp push` + Deploy → Manage deployments → Edit → New version.
+gas/
+
+.DS_Store
+__pycache__/
+*.pyc
+.clasp.json
+.vscode/

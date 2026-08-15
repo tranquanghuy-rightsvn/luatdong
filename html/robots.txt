@@ -1,0 +1,3 @@
+User-agent: *
+Sitemap: https://luatdonghanoi.vn/sitemap.xml
+Sitemap: https://luatdonghanoi.vn/pages-sitemap.xml
