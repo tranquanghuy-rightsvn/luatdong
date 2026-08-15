@@ -288,7 +288,18 @@ def build_homepage(posts: list, images: list) -> None:
                        "ACTIVE": " active" if i == 0 else ""},
     )
     write(OUT / "index.html", doc)
-    print(f"  · index.html                {min(len(images), HOME_GALLERY_LIMIT):>3} ảnh carousel")
+
+    # Bản sao y hệt, chỉ để Cloudflare phục vụ trang chủ tại "/".
+    #
+    # Cloudflare LUÔN 301 /index.html về / — luật riêng, không tắt được bằng
+    # html_handling. Mà html_handling="none" (bắt buộc, để giữ đuôi .html cho
+    # 227 URL đã index) lại khiến / không còn tự trỏ vào index.html. Worker
+    # rewrite / → /index.html thì nhận đúng cái 301 đó và thành vòng lặp.
+    # Phục vụ / từ một tên file khác là đường thoát duy nhất không đụng tới
+    # URL nào đang có. File này không nằm trong sitemap, không được link tới,
+    # và mang cùng thẻ canonical trỏ về gốc site nên không tạo trùng nội dung.
+    write(OUT / "home.html", doc)
+    print(f"  · index.html + home.html    {min(len(images), HOME_GALLERY_LIMIT):>3} ảnh carousel")
 
 
 # --------------------------------------------------------------------- sitemap

@@ -1,17 +1,19 @@
 {
   // Cấu hình Cloudflare Workers Static Assets.
   //
-  // Lý do tồn tại file này: MẶC ĐỊNH Cloudflare cắt đuôi .html — gọi
+  // "html_handling": "none" — MẶC ĐỊNH Cloudflare cắt đuôi .html, gọi
   // /bo-luat-lao-dong-nam-2019.html thì bị 307 sang /bo-luat-lao-dong-nam-2019.
   // Website đã chạy nhiều năm với 227 URL dạng .html đã được Google index và có
   // backlink; để nguyên mặc định là đổi toàn bộ URL trong một đêm.
   //
-  // "html_handling": "none" tắt hẳn mọi phép viết lại đường dẫn: xin file nào
-  // trả đúng file đó, không redirect, không thêm/bớt đuôi.
+  // Đánh đổi của "none": Cloudflare cũng thôi tự map "/" sang "/index.html",
+  // trang chủ sẽ 404. worker.js vá đúng chỗ đó — xem chú thích trong file.
   "name": "luatdong",
   "compatibility_date": "2025-01-01",
+  "main": "worker.js",
   "assets": {
     "directory": "./html",
+    "binding": "ASSETS",
     "html_handling": "none",
     "not_found_handling": "none"
   }

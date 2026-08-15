@@ -14,6 +14,8 @@ on:
       - 'data/redirects.json'
       - 'templates/**'
       - 'scripts/build.py'
+      - 'worker.js'
+      - 'wrangler.jsonc'
       - '.github/workflows/build.yml'
   workflow_dispatch:
 
@@ -27,6 +29,9 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      # Đưa secret ra env để dùng được trong `if:` của từng bước.
+      CF_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -41,6 +46,23 @@ jobs:
       - name: Build
         run: python3 scripts/build.py
 
+      # Lan can cuối trước khi đẩy lên production.
+      #
+      # Chuyện đã xảy ra thật: Google Sheet trống (chưa chạy runImportFromRepo)
+      # khiến CMS ghi đè data/posts.json từ 227 bài xuống còn 1. Nếu lúc đó CI
+      # chạy được, nó đã build ra site 1 trang rồi deploy đè lên 241 trang thật.
+      # Phía GAS đã có guardIndexShrink_, đây là lớp thứ hai — nơi cuối cùng
+      # chặn được trước khi khách hàng nhìn thấy.
+      - name: Kiểm tra site không bị teo bất thường
+        run: |
+          n=$(ls html/*.html | wc -l)
+          echo "Đã build $n trang HTML."
+          if [ "$n" -lt 50 ]; then
+            echo "::error::Chỉ có $n trang — quá ít so với site thật (~241)."
+            echo "::error::Nhiều khả năng data/posts.json bị hỏng. DỪNG, không deploy."
+            exit 1
+          fi
+
       - name: Commit kết quả
         run: |
           git config user.name  "github-actions[bot]"
@@ -48,9 +70,34 @@ jobs:
           git add html/
           if git diff --cached --quiet; then
             echo "Không có thay đổi nào trong html/ — bỏ qua commit."
-            exit 0
+          else
+            git commit -m "CI: build html from data"
+            git push
           fi
-          git commit -m "CI: build html from data"
-          git push
           # Commit này chỉ đụng html/, không đụng data/ → không tự kích hoạt lại
           # chính workflow này. (GITHUB_TOKEN cũng không được phép trigger workflow.)
+
+      # Deploy thẳng bằng wrangler thay vì để Cloudflare tự nối Git.
+      #
+      # Nối Git thì MỌI push đều build: một thao tác Lưu bài sinh 4 commit (ảnh →
+      # detail.json → posts.json → CI build), tức 4 lần deploy, trong đó 3 lần
+      # đẩy ra trạng thái dở dang. Deploy từ đây = đúng 1 lần mỗi thao tác, chỉ
+      # xảy ra sau khi build và kiểm tra đã qua, và không tính vào hạn mức
+      # build git của Cloudflare (đây là direct upload).
+      #
+      # Cần 2 secret trong repo (Settings → Secrets and variables → Actions):
+      #   CLOUDFLARE_API_TOKEN   quyền Edit Cloudflare Workers
+      #   CLOUDFLARE_ACCOUNT_ID  lấy ở sidebar dashboard Cloudflare
+      # Thiếu secret thì bước này tự bỏ qua, workflow vẫn xanh.
+      - name: Deploy lên Cloudflare
+        if: env.CF_TOKEN != ''
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+
+      - name: Nhắc nếu chưa cấu hình Cloudflare
+        if: env.CF_TOKEN == ''
+        run: |
+          echo "::warning::Chưa có CLOUDFLARE_API_TOKEN — đã build xong nhưng KHÔNG deploy."
+          echo "::warning::Thêm secret trong Settings → Secrets and variables → Actions."
