@@ -1,18 +1,5 @@
 [
  {
-  "id": 229,
-  "title": "bai 229",
-  "url": "bai-229.html",
-  "description": "ádsa",
-  "keywords": "aaa",
-  "category": "7",
-  "image": "images/posts/229/bai-229.webp",
-  "created_at": "Thứ bảy, 15/8/2026 15:54 (GMT+7)",
-  "updated_at": "2026-08-15 15:54:59",
-  "author": "hoiquanthamtu@gmail.com",
-  "status": "published"
- },
- {
   "id": 228,
   "title": "bài 228",
   "url": "bai-228.html",

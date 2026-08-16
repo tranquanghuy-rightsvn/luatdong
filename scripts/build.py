@@ -340,6 +340,35 @@ def build_redirects() -> None:
     print(f"  · _redirects                {len(lines):>3} luật")
 
 
+# ------------------------------------------------- dọn trang của bài đã xoá
+MANIFEST = DATA / "generated-pages.json"
+
+
+def prune_orphans(expected: set) -> None:
+    """Xoá những trang build từng sinh ra mà lần này không còn trong dữ liệu.
+
+    Không có bước này thì bài bị xoá vẫn nằm nguyên trên website: build chỉ ghi
+    đè file nó dựng, chưa bao giờ dọn file thừa. Trang cũ vẫn truy cập được và
+    vẫn nằm trong danh mục cho tới khi ai đó xoá tay.
+
+    Chỉ xoá file có TÊN TRONG MANIFEST của lần build trước — tuyệt đối không suy
+    đoán theo kiểu "file nào không nằm trong danh sách mong đợi thì xoá". Ở gốc
+    html/ còn 5 trang viết tay (giới thiệu, liên hệ, tìm kiếm, tư vấn, admin);
+    đoán mò là xoá nhầm chúng.
+    """
+    previous = set()
+    if MANIFEST.exists():
+        previous = set(json.loads(MANIFEST.read_text(encoding="utf-8")))
+
+    for name in sorted(previous - expected):
+        path = OUT / name
+        if path.exists():
+            path.unlink()
+            print(f"  · gỡ trang của bài đã xoá: {name}")
+
+    write(MANIFEST, json.dumps(sorted(expected), ensure_ascii=False, indent=1))
+
+
 # ------------------------------------------------------------------------ main
 def main() -> None:
     check_only = "--check" in sys.argv
@@ -368,6 +397,10 @@ def main() -> None:
     build_sitemap(posts)
     build_public_index(posts)
     build_redirects()
+
+    prune_orphans({p["url"] for p in posts}
+                  | {c["slug"] for c in CATEGORIES}
+                  | {"index.html", "home.html", "hinh-anh.html"})
     print("✓ Build xong")
 
 
