@@ -21,6 +21,23 @@ export default {
   async fetch(request, env) {
     const url = new URL(request.url);
 
+    // /admin → /admin.html. CHỈ ánh xạ đúng đường dẫn này, không làm chung
+    // cho mọi đường dẫn thiếu đuôi: nếu làm chung thì /abc và /abc.html cùng
+    // trả 200, thành hai URL cho một trang — đúng thứ trùng lặp mà cả hệ thống
+    // đang tránh.
+    if (url.pathname === '/admin' || url.pathname === '/admin/') {
+      const admin = new URL(url);
+      admin.pathname = '/admin.html';
+      const res = await env.ASSETS.fetch(new Request(admin, request));
+      if (res.ok) {
+        // Chặn lập chỉ mục ở cả tầng HTTP, phòng khi công cụ nào đó bỏ qua
+        // thẻ meta trong HTML.
+        const out = new Response(res.body, res);
+        out.headers.set('X-Robots-Tag', 'noindex, nofollow, noarchive, nosnippet');
+        return out;
+      }
+    }
+
     if (url.pathname === '/') {
       const home = new URL(url);
       home.pathname = '/home.html';
